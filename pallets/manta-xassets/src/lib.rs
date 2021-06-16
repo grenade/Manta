@@ -77,11 +77,13 @@ pub mod pallet {
 			#[pallet::compact] amount: BalanceOf<T>,
 		) -> DispatchResult {
 			let from = ensure_signed(origin)?;
+			let xcm_origin = T::Conversion::reverse(from)
+				.expect("failed to create xcm origin");
 			ensure!(T::SelfParaId::get() != para_id, Error::<T>::SelfChain);
 
 			// create friend parachain target
-			let friend_chain_target = T::Conversion::reverse(dest.clone())
-				.expect("failed to create friend chain target origin");
+			let xcm_target = T::Conversion::reverse(dest.clone())
+				.expect("failed to create xcm target");
 
 			// friend chain location
 			let asset_location =
@@ -93,32 +95,60 @@ pub mod pallet {
 			let amount = amount.saturated_into::<u128>();
 
 			// create friend parachain xcm
-			let mut friend_xcm = Xcm::WithdrawAsset {
+			// let mut friend_xcm = Xcm::WithdrawAsset {
+			// 	assets: vec![MultiAsset::ConcreteFungible {
+			// 		id: asset_location.clone(),
+			// 		amount,
+			// 	}],
+			// 	effects: vec![Order::InitiateReserveWithdraw {
+			// 		assets: vec![MultiAsset::All],
+			// 		reserve: asset_location.clone(),
+			// 		effects: vec![
+			// 			Order::BuyExecution {
+			// 				fees: MultiAsset::All,
+			// 				weight: 0,
+			// 				debt: 300_000_000_000,
+			// 				halt_on_error: false,
+			// 				xcm: vec![],
+			// 			},
+			// 			Order::DepositReserveAsset {
+			// 				assets: vec![MultiAsset::All],
+			// 				dest: xcm_target.clone(),
+			// 				effects: vec![Order::DepositAsset {
+			// 					assets: vec![MultiAsset::All],
+			// 					dest: xcm_target,
+			// 				}],
+			// 			},
+			// 		],
+			// 	}],
+			// };
+			let mut friend_xcm = Xcm::TransferAsset {
 				assets: vec![MultiAsset::ConcreteFungible {
 					id: asset_location.clone(),
 					amount,
 				}],
-				effects: vec![Order::InitiateReserveWithdraw {
-					assets: vec![MultiAsset::All],
-					reserve: asset_location.clone(),
-					effects: vec![
-						Order::BuyExecution {
-							fees: MultiAsset::All,
-							weight: 0,
-							debt: 300_000_000_000,
-							halt_on_error: false,
-							xcm: vec![],
-						},
-						Order::DepositReserveAsset {
-							assets: vec![MultiAsset::All],
-							dest: asset_location.clone(),
-							effects: vec![Order::DepositAsset {
-								assets: vec![MultiAsset::All],
-								dest: asset_location,
-							}],
-						},
-					],
-				}],
+				dest: xcm_target,
+				// effects: vec![Order::InitiateReserveWithdraw {
+				// 	assets: vec![MultiAsset::All],
+				// 	reserve: asset_location.clone(),
+				// 	effects: vec![
+				// 		Order::BuyExecution {
+				// 			fees: MultiAsset::All,
+				// 			weight: 0,
+				// 			debt: 300_000_000_000,
+				// 			halt_on_error: false,
+				// 			xcm: vec![],
+				// 		},
+				// 		Order::DepositReserveAsset {
+				// 			assets: vec![MultiAsset::All],
+				// 			dest: xcm_target.clone(),
+				// 			effects: vec![Order::DepositAsset {
+				// 				assets: vec![MultiAsset::All],
+				// 				dest: xcm_target,
+				// 			}],
+				// 		},
+				// 	],
+				// }],
 			};
 
 			log::info! {target: MANTA_XASSETS, "friend_xcm = {:?}", friend_xcm};
@@ -128,10 +158,10 @@ pub mod pallet {
 
 			// The last param is the weight we buy on target chain.
 			let xcm_outcome = T::XcmExecutor::execute_xcm_in_credit(
-				friend_chain_target,
+				xcm_origin,
 				friend_xcm.into(),
-				weight,
-				weight,
+				3_000_000_000_000,
+				3_000_000_000_000,
 			);
 			log::info! {target: MANTA_XASSETS, "xcm_outcome = {:?}", xcm_outcome};
 
@@ -148,7 +178,7 @@ pub mod pallet {
 			let from = ensure_signed(origin)?;
 
 			// create friend relaychain target
-			let friend_chain_target = T::Conversion::reverse(dest.clone())
+			let xcm_target = T::Conversion::reverse(dest.clone())
 				.expect("failed to create friend chain target origin");
 
 			// friend chain location
@@ -174,7 +204,7 @@ pub mod pallet {
 			log::info! {target: MANTA_XASSETS, "friend_xcm = {:?}", friend_xcm};
 
 			let xcm_outcome =
-				T::XcmExecutor::execute_xcm(friend_chain_target, friend_xcm.into(), 300_0000);
+				T::XcmExecutor::execute_xcm(xcm_target, friend_xcm.into(), 300_0000);
 
 			log::info! {target: MANTA_XASSETS, "xcm_outcome = {:?}", xcm_outcome};
 
