@@ -75,6 +75,7 @@ pub mod pallet {
 			para_id: ParaId,
 			dest: T::AccountId,
 			#[pallet::compact] amount: BalanceOf<T>,
+			debt: u64,
 		) -> DispatchResult {
 			let from = ensure_signed(origin)?;
 			let xcm_origin = T::Conversion::reverse(from)
@@ -95,39 +96,43 @@ pub mod pallet {
 			let amount = amount.saturated_into::<u128>();
 
 			// create friend parachain xcm
-			// let mut friend_xcm = Xcm::WithdrawAsset {
-			// 	assets: vec![MultiAsset::ConcreteFungible {
-			// 		id: asset_location.clone(),
-			// 		amount,
-			// 	}],
-			// 	effects: vec![Order::InitiateReserveWithdraw {
-			// 		assets: vec![MultiAsset::All],
-			// 		reserve: asset_location.clone(),
-			// 		effects: vec![
-			// 			Order::BuyExecution {
-			// 				fees: MultiAsset::All,
-			// 				weight: 0,
-			// 				debt: 300_000_000_000,
-			// 				halt_on_error: false,
-			// 				xcm: vec![],
-			// 			},
-			// 			Order::DepositReserveAsset {
-			// 				assets: vec![MultiAsset::All],
-			// 				dest: xcm_target.clone(),
-			// 				effects: vec![Order::DepositAsset {
-			// 					assets: vec![MultiAsset::All],
-			// 					dest: xcm_target,
-			// 				}],
-			// 			},
-			// 		],
-			// 	}],
-			// };
-			let mut friend_xcm = Xcm::TransferAsset {
+			let mut friend_xcm = Xcm::WithdrawAsset {
 				assets: vec![MultiAsset::ConcreteFungible {
 					id: asset_location.clone(),
 					amount,
 				}],
-				dest: xcm_target,
+				effects: vec![Order::DepositReserveAsset {
+					assets: vec![MultiAsset::All],
+					dest: asset_location.clone(),
+					effects: vec![
+						Order::BuyExecution {
+							fees: MultiAsset::All,
+							weight: 0,
+							debt,
+							halt_on_error: false,
+							xcm: vec![],
+						},
+						// Order::DepositReserveAsset {
+						// 	assets: vec![MultiAsset::All],
+						// 	dest: xcm_target.clone(),
+						// 	effects: vec![Order::DepositAsset {
+						// 		assets: vec![MultiAsset::All],
+						// 		dest: xcm_target,
+						// 	}],
+						// },
+						Order::DepositAsset {
+							assets: vec![MultiAsset::All],
+							dest: xcm_target,
+						}
+					],
+				}],
+			};
+			// let mut friend_xcm = Xcm::ReserveAssetDeposit {
+			// 	assets: vec![MultiAsset::ConcreteFungible {
+			// 		id: asset_location.clone(),
+			// 		amount,
+			// 	}],
+			// 	dest: xcm_target,
 				// effects: vec![Order::InitiateReserveWithdraw {
 				// 	assets: vec![MultiAsset::All],
 				// 	reserve: asset_location.clone(),
@@ -149,19 +154,21 @@ pub mod pallet {
 				// 		},
 				// 	],
 				// }],
-			};
+			// };
 
 			log::info! {target: MANTA_XASSETS, "friend_xcm = {:?}", friend_xcm};
 
 			let weight =
 				T::Weigher::weight(&mut friend_xcm).map_err(|()| Error::<T>::UnweighableMessage)?;
 
+			log::info! {target: MANTA_XASSETS, "buy weight = {:?}", weight};
+
 			// The last param is the weight we buy on target chain.
 			let xcm_outcome = T::XcmExecutor::execute_xcm_in_credit(
 				xcm_origin,
-				friend_xcm.into(),
-				3_000_000_000_000,
-				3_000_000_000_000,
+				friend_xcm,
+				weight,
+				weight,
 			);
 			log::info! {target: MANTA_XASSETS, "xcm_outcome = {:?}", xcm_outcome};
 

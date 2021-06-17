@@ -422,7 +422,7 @@ pub type LocationToAccountId = (
 	// Sibling parachain origins convert to AccountId via the `ParaId::into`.
 	SiblingParachainConvertsVia<Sibling, AccountId>,
 	// Straight up local `AccountId32` origins just alias directly to `AccountId`.
-	AccountId32Aliases<RelayNetwork, AccountId>,
+	AccountId32Aliases<AnyNetwork, AccountId>,
 );
 
 /// Means for transacting assets on this chain.
@@ -480,14 +480,15 @@ pub type Barrier = (
 	AllowTopLevelPaidExecutionFrom<All<MultiLocation>>,
 	AllowUnpaidExecutionFrom<ParentOrParentsExecutivePlurality>,
 	// ^^^ Parent and its exec plurality get free execution
+	manta_transactor::MantaXcmTransactFilter<FriendChains>,
 );
 
 pub mod manta_transactor {
 	use super::*;
 	use core::{convert::TryFrom, marker::PhantomData};
-	use frame_support::traits::{Currency, ExistenceRequirement, WithdrawReasons};
+	use frame_support::traits::{Currency, ExistenceRequirement, Get, WithdrawReasons};
 	use xcm::v0::{Error as XcmError, MultiAsset, MultiLocation, Result as XcmResult};
-	use xcm_executor::traits::{Convert, TransactAsset};
+	use xcm_executor::traits::{Convert, FilterAssetLocation, ShouldExecute, TransactAsset};
 
 	pub struct MantaTransactorAdaptor<NativeCurrency, AccountIdConverter, AccountId>(
 		PhantomData<(NativeCurrency, AccountIdConverter, AccountId)>,
@@ -548,6 +549,46 @@ pub mod manta_transactor {
 			}
 		}
 	}
+
+	/// Manta-pc Xcm Transact Filter
+	pub struct MantaXcmTransactFilter<T>(PhantomData<T>);
+	impl<T: Get<Vec<(MultiLocation, u128)>>> ShouldExecute for MantaXcmTransactFilter<T> {
+		fn should_execute<Call>(
+			origin: &MultiLocation,
+			_top_level: bool,
+			message: &Xcm<Call>,
+			_shallow_weight: Weight,
+			_weight_credit: &mut Weight,
+		) -> Result<(), ()> {
+			log::info!(target: "manta-xassets", "should_execute: _origin = {:?}, message = {:?}", origin, message);
+			// match message {
+			// 	Xcm::Transact {
+			// 		origin_type: _,
+			// 		require_weight_at_most: _,
+			// 		call: _,
+			// 	} => Ok(()),
+			// 	_ => Err(()),
+			// }
+			match origin {
+				MultiLocation::X1(Junction::AccountId32 { network, .. }) if *network == NetworkId::Any => Ok(()),
+				MultiLocation::X2(Junction::Parent, Junction::Parachain(id)) => {
+					log::info!(target: "manta-xassets", "should_execute: parachain id = {:?}", id);
+					Ok(())
+				}
+				_ => Err(()),
+			}
+		}
+	}
+
+	pub struct TrustedParachains<Chains>(PhantomData<Chains>);
+	impl<Chains: Get<Vec<(MultiLocation, u128)>>> FilterAssetLocation for TrustedParachains<Chains> {
+		fn filter_asset_location(asset: &MultiAsset, origin: &MultiLocation) -> bool {
+			
+			let b = Chains::get().iter().map(|(location, _)| location).any(|l| *l == *origin);
+			log::info!(target: "manta-xassets", "filter_asset_location: origin = {:?}, asset = {:?}, filter = {}", origin, asset, b);
+			true
+		}
+	}
 }
 
 pub struct XcmConfig;
@@ -558,7 +599,7 @@ impl Config for XcmConfig {
 	type AssetTransactor =
 		manta_transactor::MantaTransactorAdaptor<Balances, LocationToAccountId, AccountId>;
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
-	type IsReserve = NativeAsset;
+	type IsReserve = manta_transactor::TrustedParachains<FriendChains>;
 	type IsTeleporter = NativeAsset; // <- should be enough to allow teleportation of DOT
 	type LocationInverter = LocationInverter<Ancestry>;
 	type Barrier = Barrier;
@@ -670,6 +711,7 @@ parameter_types! {
 	pub const AnyNetwork: NetworkId = NetworkId::Any;
 	pub FriendChains: Vec<(MultiLocation, u128)> = vec![
 		// Acala local and live, 0.01 ACA
+		(MultiLocation::X1(Junction::Parachain(6666)), 10_000_000_000),
 		(MultiLocation::X1(Junction::Parachain(7777)), 10_000_000_000),
 	];
 }
