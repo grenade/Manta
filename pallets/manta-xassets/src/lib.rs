@@ -18,11 +18,13 @@ use sp_runtime::{
 	traits::{Saturating, Zero},
 	DispatchResult, Permill, SaturatedConversion,
 };
-use sp_std::{vec, vec::Vec};
+use sp_std::{boxed::Box, vec, vec::Vec};
+use xcm::v0::prelude::*;
 use xcm::v0::{
 	Error as XcmError, ExecuteXcm, Junction, MultiAsset, MultiLocation, Order, Outcome,
 	Result as XcmResult, Xcm,
 };
+
 use xcm_executor::{
 	traits::{Convert, FilterAssetLocation, TransactAsset, WeightBounds},
 	Assets,
@@ -42,6 +44,8 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type XcmExecutor: ExecuteXcm<Self::Call>;
+		/// The type used to actually dispatch an XCM to its destination.
+		type XcmRouter: SendXcm;
 		type FriendChains: Get<Vec<(MultiLocation, u128)>>;
 		type Conversion: Convert<MultiLocation, Self::AccountId>;
 		type Currency: ReservableCurrency<Self::AccountId>;
@@ -70,107 +74,28 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		/// transfer to parachain
 		#[pallet::weight(10000)]
-		fn transfer_to_parachain(
+		fn transfer_me_sir(
 			origin: OriginFor<T>,
-			para_id: ParaId,
 			dest: T::AccountId,
-			#[pallet::compact] amount: BalanceOf<T>,
-			debt: u64,
+			message: Xcm<()>,
 		) -> DispatchResult {
+			log::info! {target: MANTA_XASSETS, "\n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n START transfer_me_sir() "};
+
 			let from = ensure_signed(origin)?;
-			let xcm_origin = T::Conversion::reverse(from)
-				.expect("failed to create xcm origin");
-			ensure!(T::SelfParaId::get() != para_id, Error::<T>::SelfChain);
+			log::info! {target: MANTA_XASSETS, "\n \n from_origin = {:?} \n \n", from};
 
-			// create friend parachain target
-			let xcm_target = T::Conversion::reverse(dest.clone())
-				.expect("failed to create xcm target");
+			let xcm_origin = T::Conversion::reverse(from).expect("failed to create xcm origin");
+			log::info! {target: MANTA_XASSETS, "\n \n xcm_origin = {:?} \n \n", xcm_origin};
 
-			// friend chain location
-			let asset_location =
-				MultiLocation::X2(Junction::Parent, Junction::Parachain(u32::from(para_id)));
+			let xcm_target =
+				T::Conversion::reverse(dest.clone()).expect("failed to create xcm target");
+			log::info! {target: MANTA_XASSETS, "\n \n xcm_target = {:?} \n \n", xcm_target};
 
-			log::info! {target: MANTA_XASSETS, "amount = {:?}", amount};
-			log::info! {target: MANTA_XASSETS, "asset_location = {:?}", asset_location};
+			log::info! {target: MANTA_XASSETS, "\n \n RIGHT BEFORE SEND_XCM \n \n "};
 
-			let amount = amount.saturated_into::<u128>();
+			T::XcmRouter::send_xcm(xcm_target, message).unwrap();
 
-			// create friend parachain xcm
-			let mut friend_xcm = Xcm::WithdrawAsset {
-				assets: vec![MultiAsset::ConcreteFungible {
-					id: asset_location.clone(),
-					amount,
-				}],
-				effects: vec![Order::DepositReserveAsset {
-					assets: vec![MultiAsset::All],
-					dest: asset_location.clone(),
-					effects: vec![
-						Order::BuyExecution {
-							fees: MultiAsset::All,
-							weight: 0,
-							debt,
-							halt_on_error: false,
-							xcm: vec![],
-						},
-						// Order::DepositReserveAsset {
-						// 	assets: vec![MultiAsset::All],
-						// 	dest: xcm_target.clone(),
-						// 	effects: vec![Order::DepositAsset {
-						// 		assets: vec![MultiAsset::All],
-						// 		dest: xcm_target,
-						// 	}],
-						// },
-						Order::DepositAsset {
-							assets: vec![MultiAsset::All],
-							dest: xcm_target,
-						}
-					],
-				}],
-			};
-			// let mut friend_xcm = Xcm::ReserveAssetDeposit {
-			// 	assets: vec![MultiAsset::ConcreteFungible {
-			// 		id: asset_location.clone(),
-			// 		amount,
-			// 	}],
-			// 	dest: xcm_target,
-				// effects: vec![Order::InitiateReserveWithdraw {
-				// 	assets: vec![MultiAsset::All],
-				// 	reserve: asset_location.clone(),
-				// 	effects: vec![
-				// 		Order::BuyExecution {
-				// 			fees: MultiAsset::All,
-				// 			weight: 0,
-				// 			debt: 300_000_000_000,
-				// 			halt_on_error: false,
-				// 			xcm: vec![],
-				// 		},
-				// 		Order::DepositReserveAsset {
-				// 			assets: vec![MultiAsset::All],
-				// 			dest: xcm_target.clone(),
-				// 			effects: vec![Order::DepositAsset {
-				// 				assets: vec![MultiAsset::All],
-				// 				dest: xcm_target,
-				// 			}],
-				// 		},
-				// 	],
-				// }],
-			// };
-
-			log::info! {target: MANTA_XASSETS, "friend_xcm = {:?}", friend_xcm};
-
-			let weight =
-				T::Weigher::weight(&mut friend_xcm).map_err(|()| Error::<T>::UnweighableMessage)?;
-
-			log::info! {target: MANTA_XASSETS, "buy weight = {:?}", weight};
-
-			// The last param is the weight we buy on target chain.
-			let xcm_outcome = T::XcmExecutor::execute_xcm_in_credit(
-				xcm_origin,
-				friend_xcm,
-				weight,
-				weight,
-			);
-			log::info! {target: MANTA_XASSETS, "xcm_outcome = {:?}", xcm_outcome};
+			log::info! {target: MANTA_XASSETS, "NO ERROR \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n NO ERROR "};
 
 			Ok(().into())
 		}
@@ -210,8 +135,7 @@ pub mod pallet {
 
 			log::info! {target: MANTA_XASSETS, "friend_xcm = {:?}", friend_xcm};
 
-			let xcm_outcome =
-				T::XcmExecutor::execute_xcm(xcm_target, friend_xcm.into(), 300_0000);
+			let xcm_outcome = T::XcmExecutor::execute_xcm(xcm_target, friend_xcm.into(), 300_0000);
 
 			log::info! {target: MANTA_XASSETS, "xcm_outcome = {:?}", xcm_outcome};
 
@@ -239,5 +163,24 @@ pub mod pallet {
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {}
+	}
+
+	impl<T: Config> Pallet<T> {
+		/// Relay an XCM `message` from a given `interior` location in this context to a given `dest`
+		/// location. A null `dest` is not handled.
+		pub fn send_xcm(
+			interior: MultiLocation,
+			dest: MultiLocation,
+			message: Xcm<()>,
+		) -> Result<(), XcmError> {
+			let message = match interior {
+				MultiLocation::Null => message,
+				who => Xcm::<()>::RelayedFrom {
+					who,
+					message: Box::new(message),
+				},
+			};
+			T::XcmRouter::send_xcm(dest, message)
+		}
 	}
 }

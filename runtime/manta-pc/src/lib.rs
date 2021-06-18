@@ -570,7 +570,11 @@ pub mod manta_transactor {
 			// 	_ => Err(()),
 			// }
 			match origin {
-				MultiLocation::X1(Junction::AccountId32 { network, .. }) if *network == NetworkId::Any => Ok(()),
+				MultiLocation::X1(Junction::AccountId32 { network, .. })
+					if *network == NetworkId::Any =>
+				{
+					Ok(())
+				}
 				MultiLocation::X2(Junction::Parent, Junction::Parachain(id)) => {
 					log::info!(target: "manta-xassets", "should_execute: parachain id = {:?}", id);
 					Ok(())
@@ -583,8 +587,10 @@ pub mod manta_transactor {
 	pub struct TrustedParachains<Chains>(PhantomData<Chains>);
 	impl<Chains: Get<Vec<(MultiLocation, u128)>>> FilterAssetLocation for TrustedParachains<Chains> {
 		fn filter_asset_location(asset: &MultiAsset, origin: &MultiLocation) -> bool {
-			
-			let b = Chains::get().iter().map(|(location, _)| location).any(|l| *l == *origin);
+			let b = Chains::get()
+				.iter()
+				.map(|(location, _)| location)
+				.any(|l| *l == *origin);
 			log::info!(target: "manta-xassets", "filter_asset_location: origin = {:?}, asset = {:?}, filter = {}", origin, asset, b);
 			true
 		}
@@ -725,6 +731,7 @@ pub type MantaPCLocationToAccountId = (
 
 impl manta_xassets::Config for Runtime {
 	type Event = Event;
+	type XcmRouter = XcmRouter;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type FriendChains = FriendChains;
 	type Conversion = MantaPCLocationToAccountId;
