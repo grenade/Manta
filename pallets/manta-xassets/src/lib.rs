@@ -75,7 +75,7 @@ pub mod pallet {
 			para_id: ParaId,
 			dest: T::AccountId,
 			#[pallet::compact] amount: BalanceOf<T>,
-			debt: u64,
+			weight: u64,
 		) -> DispatchResult {
 			let from = ensure_signed(origin)?;
 			let xcm_origin = T::Conversion::reverse(from)
@@ -98,27 +98,19 @@ pub mod pallet {
 			// create friend parachain xcm
 			let mut friend_xcm = Xcm::WithdrawAsset {
 				assets: vec![MultiAsset::ConcreteFungible {
-					id: asset_location.clone(),
+					id: MultiLocation::X2(Junction::Parent, Junction::Parachain(6666)),
 					amount,
 				}],
 				effects: vec![Order::DepositReserveAsset {
 					assets: vec![MultiAsset::All],
-					dest: asset_location.clone(),
+					dest: MultiLocation::X2(Junction::Parent, Junction::Parachain(7777)),
 					effects: vec![
-						Order::BuyExecution {
-							fees: MultiAsset::All,
-							weight: 0,
-							debt,
-							halt_on_error: false,
-							xcm: vec![],
-						},
-						// Order::DepositReserveAsset {
-						// 	assets: vec![MultiAsset::All],
-						// 	dest: xcm_target.clone(),
-						// 	effects: vec![Order::DepositAsset {
-						// 		assets: vec![MultiAsset::All],
-						// 		dest: xcm_target,
-						// 	}],
+						// Order::BuyExecution {
+						// 	fees: MultiAsset::All,
+						// 	weight: 0,
+						// 	debt: 3000_000_000,
+						// 	halt_on_error: false,
+						// 	xcm: vec![],
 						// },
 						Order::DepositAsset {
 							assets: vec![MultiAsset::All],
@@ -158,10 +150,10 @@ pub mod pallet {
 
 			log::info! {target: MANTA_XASSETS, "friend_xcm = {:?}", friend_xcm};
 
-			let weight =
-				T::Weigher::weight(&mut friend_xcm).map_err(|()| Error::<T>::UnweighableMessage)?;
+			// let weight =
+			// 	T::Weigher::weight(&mut friend_xcm).map_err(|()| Error::<T>::UnweighableMessage)?;
 
-			log::info! {target: MANTA_XASSETS, "buy weight = {:?}", weight};
+			// log::info! {target: MANTA_XASSETS, "buy weight = {:?}", weight};
 
 			// The last param is the weight we buy on target chain.
 			let xcm_outcome = T::XcmExecutor::execute_xcm_in_credit(
