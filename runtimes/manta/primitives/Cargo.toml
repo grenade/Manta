@@ -4,14 +4,14 @@ version = "3.0.0"
 edition = "2018"
 
 [dependencies]
-sp-core = { default-features = false, version = '3.0.0' }
-sp-runtime = { default-features = false, version = '3.0.0'}
-sp-std = { version = "3.0.0", default-features = false }
+sp-core = { default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = 'master', version = '3.0.0' }
+sp-runtime = { default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = 'master', version = '3.0.0'}
+sp-std = { version = "3.0.0", git = 'https://github.com/paritytech/substrate.git', branch = 'master', default-features = false }
 serde = { version = "1.0.101", optional = true }
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false }
 
 [dev-dependencies]
-frame-support = '3.0.0'
+frame-support = { default-features = false, git = 'https://github.com/paritytech/substrate.git', branch = 'master', version = '3.0.0' }
 manta-runtime = { path = '../runtime' }
 
 [features]

@@ -297,7 +297,7 @@ impl pallet_staking::Config for Runtime {
 		pallet_collective::EnsureProportionAtLeast<_3, _4, AccountId, CouncilCollective>,
 	>;
 	type SessionInterface = Self;
-	type RewardCurve = RewardCurve;
+	//type RewardCurve = RewardCurve;
 	type NextNewSession = Session;
 	type ElectionLookahead = ElectionLookahead;
 	type Call = Call;
@@ -487,36 +487,36 @@ construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic
 	{
 		// Core Component
-		System: frame_system::{Module, Call, Config, Storage, Event<T>},
-		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
+		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Call, Storage},
 
 		// Must be before session
-		Babe: pallet_babe::{Module, Call, Storage, Config, ValidateUnsigned},
+		Babe: pallet_babe::{Pallet, Call, Storage, Config, ValidateUnsigned},
 
-		Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
+		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
 
 		// Token & Fees
-		Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
-		TransactionPayment: pallet_transaction_payment::{Module, Storage},
-		Scheduler: pallet_scheduler::{Module, Call, Storage, Event<T>},
+		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
+		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>},
 
 		// Good to have
-		Utility: pallet_utility::{Module, Call, Event},
+		Utility: pallet_utility::{Pallet, Call, Event},
 
 		// Consensus support
-		Authorship: pallet_authorship::{Module, Call, Storage, Inherent},
-		Grandpa: pallet_grandpa::{Module, Call, Storage, Config, Event},
-		Session: pallet_session::{Module, Call, Storage, Event, Config<T>},
-		Staking: pallet_staking::{Module, Call, Config<T>, Storage, Event<T>},
-		Historical: pallet_session_historical::{Module},
+		Authorship: pallet_authorship::{Pallet, Call, Storage, Inherent},
+		Grandpa: pallet_grandpa::{Pallet, Call, Storage, Config, Event},
+		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
+		Staking: pallet_staking::{Pallet, Call, Config<T>, Storage, Event<T>},
+		Historical: pallet_session_historical::{Pallet},
 
 		// Governance
 		// We have to have a council now since it requires one to setup the canceling of slashing
-		Council: pallet_collective::<Instance1>::{Module, Call, Storage, Origin<T>, Event<T>, Config<T>},
-		Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
+		Council: pallet_collective::<Instance1>::{Pallet, Call, Storage, Origin<T>, Event<T>, Config<T>},
+		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
 
 		// Manta pay
-		MantaPay: pallet_manta_pay::{Module, Call, Storage, Event<T>},
+		MantaPay: pallet_manta_pay::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
