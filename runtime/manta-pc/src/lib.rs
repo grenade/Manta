@@ -236,6 +236,7 @@ impl pallet_assets::Config for Runtime {
 	type Balance = Balance;
 	type AssetId = u32;
 	type Currency = Balances;
+	//type ForceOrigin = EnsureRoot<AccountId>;
 	type ForceOrigin = AssetsForceOrigin;
 	type AssetDeposit = AssetDeposit;
 	type MetadataDepositBase = MetadataDepositBase;
@@ -501,19 +502,86 @@ pub mod manta_transactor {
 			AccountId: sp_std::fmt::Debug + Clone,
 		> TransactAsset for MantaTransactorAdaptor<NativeCurrency, AccountIdConverter, AccountId>
 	{
+		/// Ensure that `check_in` will result in `Ok`.
+		///
+		/// When composed as a tuple, all type-items are called and at least one must result in `Ok`.
+		fn can_check_in(_origin: &MultiLocation, _what: &MultiAsset) -> XcmResult {
+			log::info!(target: "manta-xassets", "this is can_check_in()");
+			Ok(())
+
+			// Err(XcmError::Unimplemented)
+		}
+
+		/// An asset has been teleported in from the given origin. This should do whatever housekeeping is needed.
+		///
+		/// NOTE: This will make only a best-effort at bookkeeping. The caller should ensure that `can_check_in` has
+		/// returned with `Ok` in order to guarantee that this operation proceeds properly.
+		///
+		/// Implementation note: In general this will do one of two things: On chains where the asset is native,
+		/// it will reduce the assets from a special "teleported" account so that a) total-issuance is preserved;
+		/// and b) to ensure that no more assets can be teleported in than were teleported out overall (this should
+		/// not be needed if the teleporting chains are to be trusted, but better to be safe than sorry). On chains
+		/// where the asset is not native then it will generally just be a no-op.
+		///
+		/// When composed as a tuple, all type-items are called. It is up to the implementor that there exists no
+		/// value for `_what` which can cause side-effects for more than one of the type-items.
+		fn check_in(_origin: &MultiLocation, _what: &MultiAsset) {
+			log::info!(target: "manta-xassets", "this is check_in()");
+		}
+
+		/// An asset has been teleported out to the given destination. This should do whatever housekeeping is needed.
+		///
+		/// Implementation note: In general this will do one of two things: On chains where the asset is native,
+		/// it will increase the assets in a special "teleported" account so that a) total-issuance is preserved; and
+		/// b) to ensure that no more assets can be teleported in than were teleported out overall (this should not
+		/// be needed if the teleporting chains are to be trusted, but better to be safe than sorry). On chains where
+		/// the asset is not native then it will generally just be a no-op.
+		///
+		/// When composed as a tuple, all type-items are called. It is up to the implementor that there exists no
+		/// value for `_what` which can cause side-effects for more than one of the type-items.
+		fn check_out(_origin: &MultiLocation, _what: &MultiAsset) {
+			log::info!(target: "manta-xassets", "this is check_out()");
+		}
+
+		/// Move an `asset` `from` one location in `to` another location.
+		///
+		/// Returns `XcmError::FailedToTransactAsset` if transfer failed.
+		fn transfer_asset(
+			_asset: &MultiAsset,
+			_from: &MultiLocation,
+			_to: &MultiLocation,
+		) -> Result<xcm_executor::Assets, XcmError> {
+			log::info!(target: "manta-xassets", "this is transfer_asset()");
+			Err(XcmError::NotWithdrawable)
+		}
+
+		/// Move an `asset` `from` one location in `to` another location.
+		///
+		/// Attempts to use `transfer_asset` and if not available then falls back to using a two-part withdraw/deposit.
+		fn teleport_asset(
+			asset: &MultiAsset,
+			from: &MultiLocation,
+			to: &MultiLocation,
+		) -> Result<xcm_executor::Assets, XcmError> {
+			log::info!(target: "manta-xassets", "this is teleport_asset()");
+			Err(XcmError::Unimplemented)
+		}
+
 		fn deposit_asset(asset: &MultiAsset, who: &MultiLocation) -> XcmResult {
 			log::info!(target: "manta-xassets", "deposit_asset: asset = {:?}, who = {:?}", asset, who);
 
 			let who = AccountIdConverter::convert_ref(who).map_err(|_| {
 				XcmError::FailedToTransactAsset("Failed to convert multilocation to account id")
 			})?;
+			log::info!(target: "manta-xassets", "deposit_asset: skipped over first error.");
 
 			match asset {
 				MultiAsset::ConcreteFungible { id: _id, amount } => {
 					let amount = NativeCurrency::Balance::try_from(*amount)
 						.map_err(|_| XcmError::Overflow)?;
 					NativeCurrency::deposit_creating(&who, amount);
-
+					log::info!(target: "manta-xassets", "deposit_asset: going to return Ok(()).");
+					log::info!(target: "manta-xassets", "deposit_asset: amount = {:?}, who_to_deposit_to = {:?}", amount, who);
 					Ok(())
 				}
 				_ => Err(XcmError::NotWithdrawable),
@@ -742,6 +810,32 @@ impl manta_xassets::Config for Runtime {
 	type Currency = Balances;
 	type SelfParaId = ParachainInfo;
 	type Weigher = FixedWeightBounds<UnitWeightCost, Call>;
+
+	/// The units in which we record balances.
+	type Balance = Balance;
+
+	/// The arithmetic type of asset identifier.
+	type AssetId = u32;
+
+	/// The origin which may forcibly create or destroy an asset.
+	type ForceOrigin = AssetsForceOrigin;
+
+	// /// The basic amount of funds that must be reserved when creating a new asset class.
+	// type AssetDepositBase;
+
+	/// The additional funds that must be reserved for every zombie account that an asset class
+	/// supports.
+	// type AssetDepositPerZombie;
+
+	/// The maximum length of a name or symbol stored on-chain.
+	type StringLimit = StringLimit;
+
+	/// The basic amount of funds that must be reserved when adding metadata to your asset.
+	type MetadataDepositBase = MetadataDepositBase;
+
+	/// The additional funds that must be reserved for the number of bytes you store in your
+	/// metadata.
+	type MetadataDepositPerByte = MetadataDepositPerByte;
 }
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
