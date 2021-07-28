@@ -2,20 +2,19 @@
 
 Native runtimes:
 
-- Polkadot: **<%= polkadot_runtime %>**
-- Kusama: **<%= kusama_runtime %>**
-- Westend: **<%= westend_runtime %>**
+- Manta: **<%= manta_pc_runtime %>**
+- Calamari: **<%= calamari_runtime %>**
 
 This release was tested against the following versions of `rustc`. Other versions may work.
 
 - <%= rustc_stable %>
 - <%= rustc_nightly %>
 
-WASM runtimes built with [srtool](https://github.com/paritytech/srtool) using `<%= polkadot_json['rustc'] %>`.
+WASM runtimes built with [srtool](https://github.com/paritytech/srtool) using `<%= manta_pc_json['rustc'] %>`.
 
 Proposal hashes:
-* `polkadot_runtime-v<%= polkadot_runtime %>.compact.wasm - <%= polkadot_json['prop'] %>`
-* `kusama_runtime-v<%= kusama_runtime %>.compact.wasm - <%= kusama_json['prop'] %>`
+* `manta_pc_runtime-v<%= manta_pc_runtime %>.compact.wasm - <%= manta_pc_json['prop'] %>`
+* `calamari_runtime-v<%= calamari_runtime %>.compact.wasm - <%= calamari_json['prop'] %>`
 
 <% unless misc_changes.empty? %>
 ## Changes
