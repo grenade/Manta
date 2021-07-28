@@ -129,7 +129,7 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: changelog
-          path: changelog.md
+          path: $GITHUB_WORKSPACE/Manta/changelog.md
       - name: create draft release
         id: create-release
         uses: actions/create-release@v1
@@ -138,7 +138,7 @@ jobs:
         with:
           tag_name: ${{ github.ref }}
           release_name: Manta ${{ github.ref }}
-          body_path: changelog.md
+          body_path: $GITHUB_WORKSPACE/Manta/changelog.md
           draft: true
 
 #  publish-runtimes:
