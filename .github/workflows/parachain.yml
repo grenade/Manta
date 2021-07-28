@@ -110,11 +110,13 @@ jobs:
           RUSTC_NIGHTLY: ${{ needs.get-rust-versions.outputs.rustc-nightly }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: >
-          ruby $GITHUB_WORKSPACE/Manta/scripts/github/generate-changelog.rb |
+          ruby $GITHUB_WORKSPACE/Manta/scripts/github/generate-changelog.rb ||
+          cat $GITHUB_WORKSPACE/Manta/scripts/github/fallback-changelog.md |
           tee changelog.md
       - name: upload changelog
         uses: actions/upload-artifact@v2
         with:
+          name: changelog
           path: |
             changelog.md
 
