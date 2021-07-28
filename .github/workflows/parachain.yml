@@ -153,47 +153,54 @@ jobs:
           body_path: changelog.md
           draft: true
 
-#  publish-runtimes:
-#    runs-on: ubuntu-latest
-#    needs:
-#      - publish-draft-release
-#    strategy:
-#      matrix:
-#        runtime:
-#          - calamari
-#    steps:
-#      - uses: actions/checkout@v2
-#      - uses: actions/download-artifact@v2
-#      - name: Set up Ruby 2.7
-#        uses: actions/setup-ruby@v1
-#        with:
-#          ruby-version: 2.7
-#      - name: Get runtime version
-#        id: get-runtime-ver
-#        run: |
-#          ls
-#          ls "${{ matrix.runtime }}-runtime"
-#          runtime_ver="$(ruby -e 'require "./scripts/github/lib.rb"; puts get_runtime("${{ matrix.runtime }}")')"
-#          echo "::set-output name=runtime_ver::$runtime_ver"
-#      - name: Upload compact ${{ matrix.runtime }} wasm
-#        uses: actions/upload-release-asset@v1
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#        with:
-#          upload_url: ${{ needs.publish-draft-release.outputs.asset_upload_url }}
-#          asset_path: "${{ matrix.runtime }}-runtime/${{ matrix.runtime }}_runtime.compact.wasm"
-#          asset_name: ${{ matrix.runtime }}_runtime-v${{ steps.get-runtime-ver.outputs.runtime_ver }}.compact.wasm
-#          asset_content_type: application/wasm
-#      - name: Upload compressed ${{ matrix.runtime }} wasm
-#        uses: actions/upload-release-asset@v1
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#        with:
-#          upload_url: ${{ needs.publish-draft-release.outputs.asset_upload_url }}
-#          asset_path: "${{ matrix.runtime }}-runtime/${{ matrix.runtime }}_runtime.compact.compressed.wasm"
-#          asset_name: ${{ matrix.runtime }}_runtime-v${{ steps.get-runtime-ver.outputs.runtime_ver }}.compact.compressed.wasm
-#          asset_content_type: application/wasm
-#
+  publish-runtimes:
+    runs-on: ubuntu-latest
+    needs:
+      - create-draft-release
+    strategy:
+      matrix:
+        runtime:
+          - calamari
+          - manta-pc
+    steps:
+      -
+        uses: actions/checkout@v2
+      -
+        uses: actions/download-artifact@v2
+      -
+        name: ruby setup
+        uses: actions/setup-ruby@v1
+        with:
+          ruby-version: 2.7
+      -
+        name: get runtime version
+        id: get-runtime-version
+        run: |
+          ls
+          ls "${{ matrix.runtime }}-runtime"
+          runtime_ver="$(ruby -e 'require "./scripts/github/lib.rb"; puts get_runtime("${{ matrix.runtime }}")')"
+          echo "::set-output name=runtime_ver::$runtime_ver"
+      -
+        name: upload compact ${{ matrix.runtime }} wasm
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.publish-draft-release.outputs.asset_upload_url }}
+          asset_path: "${{ matrix.runtime }}-runtime/${{ matrix.runtime }}_runtime.compact.wasm"
+          asset_name: ${{ matrix.runtime }}_runtime-v${{ steps.get-runtime-version.outputs.runtime_ver }}.compact.wasm
+          asset_content_type: application/wasm
+      -
+        name: upload compressed ${{ matrix.runtime }} wasm
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.publish-draft-release.outputs.asset_upload_url }}
+          asset_path: "${{ matrix.runtime }}-runtime/${{ matrix.runtime }}_runtime.compact.compressed.wasm"
+          asset_name: ${{ matrix.runtime }}_runtime-v${{ steps.get-runtime-version.outputs.runtime_ver }}.compact.compressed.wasm
+          asset_content_type: application/wasm
+
 #  post_to_matrix:
 #    runs-on: ubuntu-latest
 #    needs: publish-draft-release
