@@ -53,8 +53,10 @@ jobs:
           - calamari
           - manta-pc
     steps:
-      - uses: actions/checkout@v2
-      - name: cache target dir
+      -
+        uses: actions/checkout@v2
+      -
+        name: cache target dir
         uses: actions/cache@v2
         with:
           path: "${{ github.workspace }}/runtime/${{ matrix.runtime }}/target"
@@ -62,22 +64,26 @@ jobs:
           restore-keys: |
             srtool-target-${{ matrix.runtime }}-
             srtool-target-
-      - name: build ${{ matrix.runtime }} runtime
+      -
+        name: build ${{ matrix.runtime }} runtime
         id: srtool_build
         uses: chevdor/srtool-actions@v0.3.0
         with:
           image: paritytech/srtool
           chain: ${{ matrix.runtime }}
-      - name: persist srtool digest
+      -
+        name: persist srtool digest
         run: >
           echo '${{ steps.srtool_build.outputs.json }}' |
           jq > ${{ matrix.runtime }}_srtool_output.json
-      - name: upload ${{ matrix.runtime }} srtool json
+      -
+        name: upload ${{ matrix.runtime }} srtool json
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.runtime }}-srtool-json
           path: ${{ matrix.runtime }}_srtool_output.json
-      - name: upload ${{ matrix.runtime }} runtime
+      -
+        name: upload ${{ matrix.runtime }} runtime
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.runtime }}-runtime
@@ -90,18 +96,22 @@ jobs:
     needs:
       - get-rust-versions
     steps:
-      - uses: actions/checkout@v2
+      -
+        uses: actions/checkout@v2
         with:
           fetch-depth: 0
           path: Manta
-      - name: ruby setup
+      -
+        name: ruby setup
         uses: actions/setup-ruby@v1
         with:
           ruby-version: 2.7
-      - name: changelog gems
+      -
+        name: changelog gems
         run: |
           gem install changelogerator git toml
-      - name: generate changelog
+      -
+        name: generate changelog
         env:
           RUSTC_STABLE: ${{ needs.get-rust-versions.outputs.rustc-stable }}
           RUSTC_NIGHTLY: ${{ needs.get-rust-versions.outputs.rustc-nightly }}
@@ -110,12 +120,12 @@ jobs:
           ruby $GITHUB_WORKSPACE/Manta/scripts/github/generate-changelog.rb ||
           cat $GITHUB_WORKSPACE/Manta/scripts/github/fallback-changelog.md |
           tee changelog.md
-      - name: upload changelog
+      -
+        name: upload changelog
         uses: actions/upload-artifact@v2
         with:
           name: changelog
-          path: |
-            changelog.md
+          path: changelog.md
 
   create-draft-release:
     runs-on: ubuntu-latest
@@ -126,11 +136,13 @@ jobs:
       release_url: ${{ steps.create-release.outputs.html_url }}
       asset_upload_url: ${{ steps.create-release.outputs.upload_url }}
     steps:
-      - uses: actions/download-artifact@v2
+      -
+        uses: actions/download-artifact@v2
         with:
           name: changelog
-          path: $GITHUB_WORKSPACE/Manta/changelog.md
-      - name: create draft release
+          path: ./
+      -
+        name: create draft release
         id: create-release
         uses: actions/create-release@v1
         env:
@@ -138,7 +150,7 @@ jobs:
         with:
           tag_name: ${{ github.ref }}
           release_name: Manta ${{ github.ref }}
-          body_path: $GITHUB_WORKSPACE/Manta/changelog.md
+          body_path: changelog.md
           draft: true
 
 #  publish-runtimes:
