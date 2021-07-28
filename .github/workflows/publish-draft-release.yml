@@ -37,10 +37,11 @@ jobs:
           else
             echo ::set-output name=match::false
           fi
-      - name: log tag filter match result
+      - name: log tag filter positive match result
         if: steps.tag-filter.outputs.match == 'true'
         run: |
           echo "ref matches tag filter"
+      - name: log tag filter negative match result
         if: steps.tag-filter.outputs.match == 'false'
         run: |
           echo "ref does not match tag filter"
