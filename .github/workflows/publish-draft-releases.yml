@@ -58,13 +58,13 @@ jobs:
         run: >
           echo '${{ steps.srtool-build.outputs.json }}' |
           sed "s/${matrix_runtime//-/_}/${matrix_runtime}/g" |
-          jq > ${{ matrix.runtime }}_srtool_output.json
+          jq > ${{ matrix.runtime }}-srtool-output.json
       -
         name: upload ${{ matrix.runtime }} srtool json
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.runtime }}-srtool-json
-          path: ${{ matrix.runtime }}_srtool_output.json
+          path: ${{ matrix.runtime }}-srtool-output.json
       -
         name: upload ${{ matrix.runtime }} runtime
         uses: actions/upload-artifact@v2
@@ -78,7 +78,16 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - get-rust-versions
+      - build-runtime
     steps:
+      -
+        uses: actions/download-artifact@v2
+        with:
+          name: manta-pc-srtool-json
+      -
+        uses: actions/download-artifact@v2
+        with:
+          name: calamari-srtool-json
       -
         uses: actions/checkout@v2
         with:
@@ -132,7 +141,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
-          release_name: Manta ${{ github.ref }}
+          release_name: runtime ${{ github.ref }}
           body_path: changelog.md
           draft: true
 
@@ -198,7 +207,7 @@ jobs:
           # yamllint disable rule:line-length
           upload_url: ${{ needs.create-draft-release.outputs.asset_upload_url }}
           asset_path: ${{ matrix.runtime }}_runtime.compact.wasm
-          asset_name: ${{ matrix.runtime }}_runtime-v${{ steps.get-runtime-version.outputs.runtime_ver }}.compact.wasm
+          asset_name: ${{ matrix.runtime }}-runtime-v${{ steps.get-runtime-version.outputs.runtime_ver }}.compact.wasm
           asset_content_type: application/wasm
           # yamllint enable rule:line-length
       -
@@ -210,7 +219,7 @@ jobs:
           # yamllint disable rule:line-length
           upload_url: ${{ needs.create-draft-release.outputs.asset_upload_url }}
           asset_path: ${{ matrix.runtime }}_runtime.compact.compressed.wasm
-          asset_name: ${{ matrix.runtime }}_runtime-v${{ steps.get-runtime-version.outputs.runtime_ver }}.compact.compressed.wasm
+          asset_name: ${{ matrix.runtime }}-runtime-v${{ steps.get-runtime-version.outputs.runtime_ver }}.compact.compressed.wasm
           asset_content_type: application/wasm
           # yamllint enable rule:line-length
       -
@@ -233,12 +242,12 @@ jobs:
         with:
           # yamllint disable rule:line-length
           upload_url: ${{ needs.create-draft-release.outputs.asset_upload_url }}
-          asset_path: ${{ matrix.runtime }}_srtool_output.json
+          asset_path: ${{ matrix.runtime }}-srtool-output.json
           asset_name: ${{ matrix.runtime }}-srtool-output-v${{ steps.get-runtime-version.outputs.runtime_ver }}.json
           asset_content_type: application/json
           # yamllint enable rule:line-length
 
-  brag-to-discord:
+  brag:
     runs-on: ubuntu-latest
     needs: create-draft-release
     steps:

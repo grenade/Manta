@@ -30,6 +30,7 @@ manta_cl = Changelog.new(
   'Manta-Network/Manta', last_ref, current_ref, token: token
 )
 
+=begin
 # gets the substrate commit hash used for a given ref
 def get_substrate_commit(client, ref)
   cargo = TOML::Parser.new(
@@ -54,6 +55,11 @@ substrate_cl = Changelog.new(
 )
 
 all_changes = (manta_cl.changes + substrate_cl.changes).reject do |c|
+  c[:title] =~ /[Cc]ompanion/
+end
+=end
+
+all_changes = manta_cl.changes.reject do |c|
   c[:title] =~ /[Cc]ompanion/
 end
 
@@ -95,13 +101,13 @@ calamari_runtime = get_runtime('calamari', repo_path)
 
 manta_pc_json = JSON.parse(
   File.read(
-    "#{ENV['GITHUB_WORKSPACE']}/manta_pc-srtool-json/manta_pc_srtool_output.json"
+    "#{ENV['GITHUB_WORKSPACE']}/manta-pc-srtool-output.json"
   )
 )
 
 calamari_json = JSON.parse(
   File.read(
-    "#{ENV['GITHUB_WORKSPACE']}/calamari-srtool-json/calamari_srtool_output.json"
+    "#{ENV['GITHUB_WORKSPACE']}/calamari-srtool-output.json"
   )
 )
 
