@@ -74,6 +74,29 @@ jobs:
             ${{ steps.srtool-build.outputs.wasm }}
             ${{ steps.srtool-build.outputs.wasm_compressed }}
 
+  build-node:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        uses: actions/checkout@v2
+      -
+        name: init
+        run: ./scripts/init.sh
+      -
+        name: build
+        run: |
+          cargo build --verbose --release -p calamari-pc
+      -
+        name: strip
+        run: |
+          strip target/release/calamari-pc
+      -
+        name: upload
+        uses: actions/upload-artifact@v2
+        with:
+          name: calamari-pc
+          path: target/release/calamari-pc
+
   build-changelog:
     runs-on: ubuntu-latest
     needs:
@@ -244,6 +267,29 @@ jobs:
           asset_path: ${{ matrix.runtime }}-srtool-output.json
           asset_name: ${{ matrix.runtime }}-srtool-output-v${{ steps.get-runtime-version.outputs.runtime_ver }}.json
           asset_content_type: application/json
+          # yamllint enable rule:line-length
+
+  publish-node:
+    runs-on: ubuntu-latest
+    needs:
+      - build-node
+      - create-draft-release
+    steps:
+      -
+        uses: actions/download-artifact@v2
+        with:
+          name: calamari-pc
+      -
+        name: upload calamari-pc
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # yamllint disable rule:line-length
+          upload_url: ${{ needs.create-draft-release.outputs.asset_upload_url }}
+          asset_path: calamari-pc
+          asset_name: calamari-pc
+          asset_content_type: application/octet-stream
           # yamllint enable rule:line-length
 
   brag:
