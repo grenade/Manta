@@ -27,7 +27,7 @@ renderer = ERB.new(
 last_ref = 'refs/tags/' + github_client.latest_release(ENV['GITHUB_REPOSITORY']).tag_name
 
 manta_cl = Changelog.new(
-  'Manta-Network/Manta', last_ref, current_ref, token: token
+  ENV['GITHUB_REPOSITORY'], last_ref, current_ref, token: token
 )
 
 =begin
