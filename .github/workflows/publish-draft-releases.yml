@@ -164,6 +164,7 @@ jobs:
           ls
           ls "${{ matrix.runtime }}-runtime"
       -
+        if: contains(matrix.runtime, '-')
         name: rename underscored artifacts
         env:
           matrix_runtime: ${{ matrix.runtime }}
@@ -177,6 +178,7 @@ jobs:
             ${{ matrix.runtime }}-runtime/${{ matrix.runtime }}_runtime.compact.wasm
         # yamllint enable rule:line-length
       -
+        if: contains(matrix.runtime, '-')
         name: list artifacts post rename
         run: |
           ls
