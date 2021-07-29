@@ -1,4 +1,5 @@
-name: parachain
+---
+name: publish draft releases
 
 on:
   push:
@@ -24,34 +25,13 @@ jobs:
           echo "::set-output name=stable::$(rustc +stable --version)"
           echo "::set-output name=nightly::$(rustc +nightly --version)"
 
-#  create-execution-plan:
-#    runs-on: ubuntu-latest
-#    steps:
-#      -
-#        id: tag-filter
-#        run: |
-#          echo "github.event.ref: ${{ github.event.ref }}"
-#          if [[ ${{ github.event.ref }} =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
-#            echo ::set-output name=match::true
-#          else
-#            echo ::set-output name=match::false
-#          fi
-#      - name: log tag filter positive match result
-#        if: steps.tag-filter.outputs.match == 'true'
-#        run: |
-#          echo "ref matches tag filter"
-#      - name: log tag filter negative match result
-#        if: steps.tag-filter.outputs.match == 'false'
-#        run: |
-#          echo "ref does not match tag filter"
-
-  build-runtimes:
+  build-runtime:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         runtime:
           - calamari
-          - manta-pc
+          - manta_pc
     steps:
       -
         uses: actions/checkout@v2
@@ -66,7 +46,7 @@ jobs:
             srtool-target-
       -
         name: build ${{ matrix.runtime }} runtime
-        id: srtool_build
+        id: srtool-build
         uses: chevdor/srtool-actions@v0.3.0
         with:
           image: paritytech/srtool
@@ -74,7 +54,7 @@ jobs:
       -
         name: persist srtool digest
         run: >
-          echo '${{ steps.srtool_build.outputs.json }}' |
+          echo '${{ steps.srtool-build.outputs.json }}' |
           jq > ${{ matrix.runtime }}_srtool_output.json
       -
         name: upload ${{ matrix.runtime }} srtool json
@@ -88,8 +68,8 @@ jobs:
         with:
           name: ${{ matrix.runtime }}-runtime
           path: |
-            ${{ steps.srtool_build.outputs.wasm }}
-            ${{ steps.srtool_build.outputs.wasm_compressed }}
+            ${{ steps.srtool-build.outputs.wasm }}
+            ${{ steps.srtool-build.outputs.wasm_compressed }}
 
   build-changelog:
     runs-on: ubuntu-latest
@@ -131,7 +111,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - build-changelog
-      - build-runtimes
+      - build-runtime
     outputs:
       release_url: ${{ steps.create-release.outputs.html_url }}
       asset_upload_url: ${{ steps.create-release.outputs.upload_url }}
@@ -153,7 +133,7 @@ jobs:
           body_path: changelog.md
           draft: true
 
-  publish-runtimes:
+  publish-runtime:
     runs-on: ubuntu-latest
     needs:
       - create-draft-release
@@ -161,7 +141,7 @@ jobs:
       matrix:
         runtime:
           - calamari
-          - manta-pc
+          - manta_pc
     steps:
       -
         uses: actions/checkout@v2
@@ -175,31 +155,37 @@ jobs:
       -
         name: get runtime version
         id: get-runtime-version
+        # yamllint disable rule:line-length
         run: |
           ls
           ls "${{ matrix.runtime }}-runtime"
           runtime_ver="$(ruby -e 'require "./scripts/github/lib.rb"; puts get_runtime("${{ matrix.runtime }}")')"
           echo "::set-output name=runtime_ver::$runtime_ver"
+        # yamllint enable rule:line-length
       -
         name: upload compact ${{ matrix.runtime }} wasm
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          # yamllint disable rule:line-length
           upload_url: ${{ needs.create-draft-release.outputs.asset_upload_url }}
           asset_path: "${{ matrix.runtime }}-runtime/${{ matrix.runtime }}_runtime.compact.wasm"
           asset_name: ${{ matrix.runtime }}_runtime-v${{ steps.get-runtime-version.outputs.runtime_ver }}.compact.wasm
           asset_content_type: application/wasm
+          # yamllint enable rule:line-length
       -
         name: upload compressed ${{ matrix.runtime }} wasm
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          # yamllint disable rule:line-length
           upload_url: ${{ needs.create-draft-release.outputs.asset_upload_url }}
           asset_path: "${{ matrix.runtime }}-runtime/${{ matrix.runtime }}_runtime.compact.compressed.wasm"
           asset_name: ${{ matrix.runtime }}_runtime-v${{ steps.get-runtime-version.outputs.runtime_ver }}.compact.compressed.wasm
           asset_content_type: application/wasm
+          # yamllint enable rule:line-length
 
   brag-to-discord:
     runs-on: ubuntu-latest
