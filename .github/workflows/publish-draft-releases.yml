@@ -31,7 +31,7 @@ jobs:
       matrix:
         runtime:
           - calamari
-          - manta_pc
+          - manta-pc
     steps:
       -
         uses: actions/checkout@v2
