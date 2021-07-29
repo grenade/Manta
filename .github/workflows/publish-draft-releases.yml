@@ -254,8 +254,8 @@ jobs:
       -
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          DISCORD_USERNAME: 'raybot'
-          DISCORD_AVATAR: https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/Mobula_mobular.jpg/320px-Mobula_mobular.jpg
+          DISCORD_USERNAME: raybot
+          DISCORD_AVATAR: https://gist.githubusercontent.com/grenade/66a46007b37778d81ee064394263b16c/raw/raybot.webp
         uses: Ilshidur/action-discord@0.3.2
         with:
           args: 'draft runtime release created for ${{ github.ref }}'
