@@ -65,7 +65,7 @@ misc_changes = Changelog.changes_with_label(all_changes, 'B1-releasenotes')
 client_changes = Changelog.changes_with_label(all_changes, 'B5-clientnoteworthy')
 runtime_changes = Changelog.changes_with_label(all_changes, 'B7-runtimenoteworthy')
 
-# Add the audit status for runtime changes
+# add the audit status for runtime changes
 runtime_changes.each do |c|
   if c[:labels].any? { |l| l[:name] == 'D1-audited 👍' }
     c[:pretty_title] = "✅ `audited` #{c[:pretty_title]}"

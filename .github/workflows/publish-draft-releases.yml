@@ -254,7 +254,8 @@ jobs:
       -
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        uses: Ilshidur/action-discord@master
+          DISCORD_USERNAME: 'devil ray'
+          DISCORD_AVATAR: https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/Mobula_mobular.jpg/320px-Mobula_mobular.jpg
+        uses: Ilshidur/action-discord@0.3.2
         with:
-          args: 'new draft release created for manta and calamari runtimes ${{ github.ref }}'
-
+          args: 'draft runtime release created for ${{ github.ref }}'
