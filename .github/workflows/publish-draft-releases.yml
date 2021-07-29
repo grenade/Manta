@@ -129,7 +129,7 @@ jobs:
           SCCACHE_CACHE_SIZE: 2G
           SCCACHE_DIR: /home/runner/.cache/sccache
         run: |
-          cargo build --verbose --release -p calamari-pc
+          cargo build --verbose --release --features calamari
       -
         name: stop sccache server
         run: sccache --stop-server || true
