@@ -109,8 +109,7 @@ jobs:
           RUSTC_NIGHTLY: ${{ needs.get-rust-versions.outputs.rustc-nightly }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: >
-          ruby $GITHUB_WORKSPACE/Manta/scripts/github/generate-changelog.rb ||
-          cat $GITHUB_WORKSPACE/Manta/scripts/github/fallback-changelog.md |
+          ruby $GITHUB_WORKSPACE/Manta/scripts/github/generate-changelog.rb |
           tee changelog.md
       -
         name: upload changelog
@@ -255,7 +254,10 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           DISCORD_USERNAME: raybot
+          # yamllint disable rule:line-length
           DISCORD_AVATAR: https://gist.githubusercontent.com/grenade/66a46007b37778d81ee064394263b16c/raw/raybot.webp
+          DISCORD_EMBEDS: '{"embeds":[{"title":"runtime ${{ github.ref }}","url":"${{ needs.create-draft-release.outputs.release_url }}"}]}'
+          # yamllint enable rule:line-length
         uses: Ilshidur/action-discord@0.3.2
         with:
-          args: 'draft runtime release created for ${{ github.ref }}'
+          args: 'args draft runtime release created for ${{ github.ref }}'
