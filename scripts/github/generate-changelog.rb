@@ -94,7 +94,7 @@ release_priority = Changelog.highest_priority_for_changes(client_changes)
 
 rustc_stable = ENV['RUSTC_STABLE']
 rustc_nightly = ENV['RUSTC_NIGHTLY']
-manta_pc_runtime = get_runtime('manta_pc', repo_path)
+manta_pc_runtime = get_runtime('manta-pc', repo_path)
 calamari_runtime = get_runtime('calamari', repo_path)
 
 manta_pc_json = JSON.parse(
