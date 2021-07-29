@@ -141,27 +141,55 @@ jobs:
       matrix:
         runtime:
           - calamari
-          - manta_pc
+          - manta-pc
     steps:
       -
         uses: actions/checkout@v2
       -
         uses: actions/download-artifact@v2
+        with:
+          name: ${{ matrix.runtime }}-runtime
+      -
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ matrix.runtime }}-srtool-json
       -
         name: ruby setup
         uses: actions/setup-ruby@v1
         with:
           ruby-version: 2.7
       -
-        name: get runtime version
-        id: get-runtime-version
-        # yamllint disable rule:line-length
+        name: list artifacts
         run: |
           ls
           ls "${{ matrix.runtime }}-runtime"
-          runtime_ver="$(ruby -e 'require "./scripts/github/lib.rb"; puts get_runtime("${{ matrix.runtime }}")')"
-          echo "::set-output name=runtime_ver::$runtime_ver"
+      -
+        name: rename underscored artifacts
+        env:
+          matrix_runtime: ${{ matrix.runtime }}
+        # yamllint disable rule:line-length
+        run: |
+          mv \
+            ${{ matrix.runtime }}-runtime/${matrix_runtime//-/_}_runtime.compact.compressed.wasm \
+            ${{ matrix.runtime }}-runtime/${{ matrix.runtime }}_runtime.compact.compressed.wasm
+          mv \
+            ${{ matrix.runtime }}-runtime/${matrix_runtime//-/_}_runtime.compact.wasm \
+            ${{ matrix.runtime }}-runtime/${{ matrix.runtime }}_runtime.compact.wasm
         # yamllint enable rule:line-length
+      -
+        name: list artifacts post rename
+        run: |
+          ls
+          ls "${{ matrix.runtime }}-runtime"
+      -
+        name: get runtime version
+        id: get-runtime-version
+        run: |
+          runtime_ver="$(ruby -e '
+            require "./scripts/github/lib.rb";
+            puts get_runtime("${{ matrix.runtime }}")
+          ')"
+          echo "::set-output name=runtime_ver::$runtime_ver"
       -
         name: upload compact ${{ matrix.runtime }} wasm
         uses: actions/upload-release-asset@v1
