@@ -209,8 +209,9 @@ jobs:
           export AWS_SECRET_ACCESS_KEY=$(jq -r '.SecretAccessKey' ~/.aws/credentials.json)
           export AWS_SESSION_TOKEN=$(jq -r '.Token' ~/.aws/credentials.json)
           mongosh "mongodb+srv://benchmark-cluster.ucudy.mongodb.net/${{ github.repository_owner }}" \
-            --username ${AWS_ACCESS_KEY_ID} \
-            --password ${AWS_SECRET_ACCESS_KEY} \
+            --awsAccessKeyId ${AWS_ACCESS_KEY_ID} \
+            --awsSecretAccessKey ${AWS_SECRET_ACCESS_KEY} \
+            --awsSessionToken ${AWS_SESSION_TOKEN} \
             --eval 'db.${{ github.repository.name }}.insertOne(
               {
                 repo: "${{ github.repository }}",
