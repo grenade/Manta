@@ -212,6 +212,7 @@ jobs:
             --awsAccessKeyId ${AWS_ACCESS_KEY_ID} \
             --awsSecretAccessKey ${AWS_SECRET_ACCESS_KEY} \
             --awsSessionToken ${AWS_SESSION_TOKEN} \
+            --authenticationMechanism MONGODB-AWS
             --eval 'db.${{ github.repository.name }}.insertOne(
               {
                 repo: "${{ github.repository }}",
