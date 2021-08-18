@@ -202,7 +202,7 @@ jobs:
           actual_time=$(jq '.time' ${{ github.workspace }}/benchmark-${{ matrix.benchmark.pallet.name }}-${{ matrix.benchmark.extrinsic.name }}.json)
           actual_unit=$(jq -r '.unit' ${{ github.workspace }}/benchmark-${{ matrix.benchmark.pallet.name }}-${{ matrix.benchmark.extrinsic.name }}.json)
           mongosh "mongodb+srv://benchmark-cluster.ucudy.mongodb.net/${{ github.repository_owner }}" \
-            --authenticationMechanism MONGODB-AWS
+            --authenticationMechanism MONGODB-AWS \
             --eval 'db.${{ github.repository.name }}.insertOne(
               {
                 repo: "${{ github.repository }}",
