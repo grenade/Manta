@@ -13,7 +13,7 @@ jobs:
 
   build-benchmark:
     needs: start-worker
-    runs-on: ${{ needs.start-worker.outputs.worker-label }}
+    runs-on: ${{ needs.start-worker.outputs.runner-label }}
     steps:
       -
         name: install sccache
@@ -90,7 +90,7 @@ jobs:
     needs:
       - start-worker
       - build-benchmark
-    runs-on: ${{ needs.start-worker.outputs.worker-label }}
+    runs-on: ${{ needs.start-worker.outputs.runner-label }}
     strategy:
       fail-fast: false
       matrix:
@@ -224,7 +224,7 @@ jobs:
   start-worker:
     runs-on: ubuntu-latest
     outputs:
-      worker-label: ${{ steps.start-self-hosted-runner.outputs.worker-label }}
+      runner-label: ${{ steps.start-self-hosted-runner.outputs.runner-label }}
       aws-region: ${{ steps.start-self-hosted-runner.outputs.aws-region }}
       aws-instance-id: ${{ steps.start-self-hosted-runner.outputs.aws-instance-id }}
     steps:
@@ -261,7 +261,7 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ needs.start-worker.outputs.aws-region }}
-          worker-label: ${{ needs.start-worker.outputs.worker-label }}
+          runner-label: ${{ needs.start-worker.outputs.runner-label }}
           aws-instance-id: ${{ needs.start-worker.outputs.aws-instance-id }}
 
 # yamllint enable rule:line-length
