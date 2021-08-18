@@ -204,7 +204,7 @@ jobs:
           mongosh "mongodb+srv://benchmark-cluster.ucudy.mongodb.net/${{ github.repository_owner }}" \
             --authenticationMechanism MONGODB-AWS \
             --authenticationDatabase '$external' \
-            --eval 'db.${{ github.repository.name }}.insertOne(
+            --eval 'db.${{ github.repository_name }}.insertOne(
               {
                 repo: "${{ github.repository }}",
                 sha: "${{ github.sha }}",
