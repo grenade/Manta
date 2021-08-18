@@ -86,7 +86,7 @@ jobs:
           path: /home/runner/.cargo/bin/manta
 
   run-benchmark:
-    name: benchmark (${{ matrix.benchmark.pallet.name }} ${{ matrix.benchmark.extrinsic.name }})
+    name: benchmark (${{ matrix.benchmark.pallet.name }} ${{ matrix.benchmark.extrinsic.name }} < ${{ matrix.benchmark.expected.time }} ${{ matrix.benchmark.expected.unit }})
     needs:
       - start-worker
       - build-benchmark
@@ -152,6 +152,19 @@ jobs:
               unit: µs
     steps:
       -
+        name: install mongodb-mongosh
+        run: |
+          if command -v mongosh &> /dev/null; then
+            echo "mongosh detected"
+          else
+            # https://docs.mongodb.com/mongodb-shell/install
+            sudo apt-get install gnupg
+            wget -qO - https://www.mongodb.org/static/pgp/server-5.0.asc | sudo apt-key add -
+            echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/5.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
+            sudo apt-get update
+            sudo apt-get install -y mongodb-mongosh
+          fi
+      -
         uses: actions/download-artifact@v2
         with:
           name: manta
@@ -182,18 +195,32 @@ jobs:
           name: benchmark-${{ matrix.benchmark.pallet.name }}-${{ matrix.benchmark.extrinsic.name }}.json
           path: ${{ github.workspace }}/benchmark-${{ matrix.benchmark.pallet.name }}-${{ matrix.benchmark.extrinsic.name }}.json
       -
-        name: evaluate benchmark
+        name: evaluate and persist benchmark
         run: |
           expected_time=${{ matrix.benchmark.expected.time }}
           expected_unit=${{ matrix.benchmark.expected.unit }}
           actual_time=$(jq '.time' ${{ github.workspace }}/benchmark-${{ matrix.benchmark.pallet.name }}-${{ matrix.benchmark.extrinsic.name }}.json)
           actual_unit=$(jq -r '.unit' ${{ github.workspace }}/benchmark-${{ matrix.benchmark.pallet.name }}-${{ matrix.benchmark.extrinsic.name }}.json)
+          mongosh "mongodb+srv://benchmark-cluster.ucudy.mongodb.net/${{ github.repository_owner }}" \
+            --eval 'db.${{ github.repository.name }}.insertOne(
+              {
+                repo: "${{ github.repository }}",
+                sha: "${{ github.sha }}",
+                observed: ISODate(),
+                pallet: "${{ matrix.benchmark.pallet.name }}",
+                extrinsic: "${{ matrix.benchmark.extrinsic.name }}",
+                actual: {
+                  time: '${actual_time}',
+                  unit: "'${actual_unit}'"
+                },
+                expected: {
+                  time: '${expected_time}',
+                  unit: "'${expected_unit}'"
+                }
+              }
+            )'
           if [ "${actual_unit}" != "${expected_unit}" ]; then echo "actual unit of time (${actual_time} ${actual_unit}) differs from expected unit of time (${expected_time} ${expected_unit})"; exit 1; fi
           if (( $(echo "$actual_time <= $expected_time" | bc -l) )); then echo "actual time (${actual_time} ${actual_unit}) is within expected time (${expected_time} ${expected_unit})"; else echo "actual time (${actual_time} ${actual_unit}) exceeds expected time (${expected_time} ${expected_unit})"; exit 1; fi
-      # -
-      #   name: benchmark pallet-manta-pay
-      #   run: |
-      #     jq --slurp '. | add' ${{ github.workspace }}/extrinsic-benchmark-pallet-manta-pay-*.json > ${{ github.workspace }}/extrinsic-benchmark-pallet-manta-pay.json
 
   brag-or-whine:
     needs: run-benchmark
@@ -202,17 +229,6 @@ jobs:
     steps:
       -
         uses: actions/download-artifact@v2
-      -
-        run: |
-          tree
-          ls -ahr
-      #-
-      #  run: >-
-      #    for extrinsic in init-asset transfer-asset mint-private-asset private-transfer reclaim; do
-      #     echo "File: ${i} \n";
-      #     cat $i;
-      #     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -;
-      #    done
       -
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
@@ -244,6 +260,7 @@ jobs:
           aws-instance-type: c5a.8xlarge # 32 vcpu, 64gb ram, $1.392 hourly
           aws-instance-root-volume-size: 32
           aws-instance-lifecycle: spot
+          aws-iam-role-name: github-action-worker
           aws-image-search-pattern: ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*
           aws-image-search-owners: '["099720109477"]' # canonical
 
