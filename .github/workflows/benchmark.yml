@@ -74,7 +74,7 @@ jobs:
           CARGO_TERM_COLOR: always
         run: |
           source ${HOME}/.cargo/env
-          cargo install --verbose --git https://github.com/Manta-Network/Manta --rev ${GITHUB_SHA:0:7} --features runtime-benchmarks --locked --force --root ~/.cargo
+          cargo install --verbose --git https://github.com/${GITHUB_REPOSITORY} --rev ${GITHUB_SHA:0:7} --features runtime-benchmarks --locked --force --root ~/.cargo
       -
         name: stop sccache server
         run: sccache --stop-server || true
